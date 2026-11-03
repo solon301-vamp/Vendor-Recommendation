@@ -1,0 +1,346 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Laporan Overview Vendor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: laporan satu kolom lebar 1080px; angka kunci di atas, diagram Sankey sebagai pusat, lalu tabel per bagian. */
+:root{
+  --bg:#F3F6F7; --surface:#FFFFFF; --ink:#14212B; --muted:#58697A; --line:#D8E0E6; --soft:#E9EEF1;
+  --accent:#0E6B73; --flow:#2C6E91; --out:#8E9DA9; --good:#1E7A4F; --warn:#B7791F; --serious:#C2552B; --violet:#7A5AA6;
+  --font-display:"Bricolage Grotesque","Public Sans",system-ui,sans-serif;
+  --hero:#0B3A42; --hero2:#115560; --hero-ink:#F1F8F8; --hero-mut:#A3CBCF;
+  --font-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-num:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:36px}
+h1{font-size:clamp(26px,4.2vw,38px);line-height:1.12;margin:0;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:19px;margin:0 0 4px;font-weight:650;text-wrap:balance}
+.sub{color:var(--muted);margin:0;max-width:70ch}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 10px}
+.num{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+section{display:flex;flex-direction:column;gap:14px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi .v{font-family:var(--font-num);font-size:26px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .l{font-size:13px;font-weight:600}
+.kpi .n{font-size:12.5px;color:var(--muted)}
+.kpi.hl .v{color:var(--good)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--soft);vertical-align:top}
+td.r,th.r{text-align:right}
+td.num{white-space:nowrap}
+tr.total td{font-weight:650;border-top:1px solid var(--line);border-bottom:0}
+tr.grp td{background:var(--soft);font-weight:600;font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.muted{color:var(--muted)}
+.bar{height:8px;background:var(--soft);border-radius:4px;min-width:90px;position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:4px;background:var(--flow)}
+.rows{display:flex;flex-direction:column;gap:12px}
+.row{display:grid;grid-template-columns:minmax(120px,170px) 1fr auto;gap:12px;align-items:center}
+.row .nm{font-size:13.5px}
+.row .vv{font-family:var(--font-num);font-size:13px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.stack{display:flex;gap:2px;height:30px}
+.stack div{border-radius:3px;min-width:3px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend b{width:10px;height:10px;border-radius:2px;display:inline-block;flex:none}
+.legend span>span{display:block}
+.sk{position:relative}
+.sk svg{display:block;width:100%;min-width:900px;height:auto}
+.sk text{font-family:var(--font-body);fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:3px;stroke-linejoin:round}
+.sk text.v{font-family:var(--font-num);font-size:12px;fill:var(--muted)}
+.sk text.t{font-size:13px;font-weight:600}
+.sk text.hd{font-size:11px;font-weight:700;letter-spacing:.06em;fill:var(--muted);stroke:none}
+.sk line.hl{stroke:var(--line);stroke-width:1.5}
+.sk .lk{fill:none;transition:opacity .15s}
+.sk .nd{cursor:default}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;padding:7px 10px;border-radius:6px;line-height:1.4;max-width:260px;opacity:0;transition:opacity .1s;z-index:3}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+ul.f{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
+.note{font-size:13px;color:var(--muted)}
+details summary{cursor:pointer;font-size:13.5px;font-weight:600;padding:4px 0}
+details summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.hero{background:linear-gradient(135deg,var(--hero) 0%,var(--hero2) 100%);color:var(--hero-ink);border-radius:14px;padding:clamp(22px,4vw,40px);display:flex;flex-direction:column;gap:28px;overflow:hidden;position:relative}
+.hero .eyebrow{color:var(--hero-mut)}
+.hero h1{font-family:var(--font-display);font-weight:800;font-size:clamp(30px,5.4vw,56px);line-height:1.04;letter-spacing:-.02em;max-width:18ch}
+.hero p.lead{color:var(--hero-mut);margin:0;max-width:62ch;font-size:16px}
+.funnel{display:flex;flex-direction:column;gap:10px}
+.fn{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:14px;align-items:center}
+.fn .lb{font-size:13.5px;color:var(--hero-mut)}
+.fn .tr{display:flex;align-items:center;gap:12px}
+.fn .bb{height:26px;border-radius:5px;background:var(--hero-ink);opacity:.92;min-width:4px}
+.fn:nth-child(2) .bb{opacity:.78}.fn:nth-child(3) .bb{opacity:.64}.fn:nth-child(4) .bb{opacity:.5}
+.fn:last-child .bb{background:#7BE0A6;opacity:1}
+.fn .nv{font-family:var(--font-num);font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fn .nv small{color:var(--hero-mut);font-size:12px;margin-left:6px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.finds{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.find{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.find .big{font-family:var(--font-display);font-weight:800;font-size:40px;line-height:1;letter-spacing:-.02em}
+.find .big.w{color:var(--warn)}.find .big.s{color:var(--serious)}.find .big.g{color:var(--good)}.find .big.f{color:var(--flow)}.find .big.v{color:var(--violet)}
+.find p{margin:0;font-size:14px}
+.find.wide{grid-column:1/-1}
+h2{font-family:var(--font-display);font-weight:700;font-size:24px;letter-spacing:-.01em}
+.sec-h{display:flex;flex-direction:column;gap:4px;padding-bottom:10px;border-bottom:2px solid var(--ink)}
+.sec-h h2{margin:0}
+.panel{border-radius:10px;box-shadow:0 1px 0 rgba(20,33,43,.04),0 8px 24px -16px rgba(20,33,43,.25)}
+.bar{height:12px;border-radius:6px}.bar i{border-radius:6px}
+.kpi .v{font-family:var(--font-display);font-weight:700;font-size:34px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.step .sn{font-family:var(--font-display);font-weight:800;font-size:44px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.step b{font-size:15px}
+.step p{margin:4px 0 0;font-size:13.5px;color:var(--muted)}
+.step .bar{margin-top:auto}
+@media (max-width:560px){.row{grid-template-columns:1fr auto}.row .bar{grid-column:1/-1;order:3}}
+</style>
+
+<div class="wrap">
+<div class="hero">
+  <div>
+    <p class="eyebrow">Master data vendor · rekomendasi_vendor · 3 November 2026</p>
+    <h1>Dari 15.227 vendor, 234 siap dipakai</h1>
+  </div>
+  <p class="lead">Laporan ini menelusuri seluruh vendor dari data awal, lewat penyaringan, dedup, dan penggabungan, sampai rekomendasi tindak lanjut untuk setiap vendor di daftar akhir.</p>
+  <div class="funnel" role="img" aria-label="Corong vendor: 15.227 seluruh vendor, 10.367 aktif, 6.701 material atau service, 4.433 di vendor_fix, 234 siap dipakai">
+    <div class="fn"><span class="lb">Seluruh vendor</span><div class="tr"><div class="bb" style="width:min(100%,520px)"></div><span class="nv">15.227</span></div></div>
+    <div class="fn"><span class="lb">Aktif</span><div class="tr"><div class="bb" style="width:calc(min(100%,520px)*.681)"></div><span class="nv">10.367<small>68,1%</small></span></div></div>
+    <div class="fn"><span class="lb">Material atau service</span><div class="tr"><div class="bb" style="width:calc(min(100%,520px)*.44)"></div><span class="nv">6.701<small>64,6%</small></span></div></div>
+    <div class="fn"><span class="lb">Masuk vendor_fix</span><div class="tr"><div class="bb" style="width:calc(min(100%,520px)*.291)"></div><span class="nv">4.433<small>66,2%</small></span></div></div>
+    <div class="fn"><span class="lb">Siap dipakai</span><div class="tr"><div class="bb" style="width:calc(min(100%,520px)*.0154)"></div><span class="nv">234<small>5,3%</small></span></div></div>
+  </div>
+</div>
+
+<section>
+  <div class="sec-h"><h2>Diagram Sankey: alur data vendor</h2>
+  <p class="sub">Alur: 15.227 data awal difilter aktif, lalu hanya vendor type material dan service yang diproses (6.701). Hasil akhir menjumlah 6.701. Lebar aliran sebanding dengan jumlah vendor. Arahkan kursor ke aliran atau kotak untuk melihat jumlah dan persentasenya.</p></div>
+  <div class="panel">
+    <div class="scroll"><div class="sk" id="sk"><svg id="sksvg" viewBox="0 0 1200 600" role="img" aria-label="Diagram Sankey alur vendor dari seluruh vendor hingga rekomendasi tindak lanjut"></svg><div class="tip" id="tip"></div></div></div>
+    <div class="legend" style="margin-top:12px">
+      <span><b style="background:var(--flow)"></b>Diproses</span>
+      <span><b style="background:var(--out)"></b>Tidak diproses atau dikeluarkan</span>
+      <span><b style="background:var(--warn)"></b>Perlu tindak lanjut</span>
+      <span><b style="background:var(--serious)"></b>Dokumen bermasalah</span>
+      <span><b style="background:var(--violet)"></b>Perlu keputusan</span>
+      <span><b style="background:var(--good)"></b>Siap dipakai</span>
+    </div>
+    <details style="margin-top:10px"><summary>Lihat sebagai tabel</summary>
+      <div class="scroll"><table id="sktable"><thead><tr><th>Dari</th><th>Ke</th><th class="r">Vendor</th><th class="r">% dari asal</th></tr></thead><tbody></tbody></table></div>
+    </details>
+    <p class="note" style="margin:10px 0 0">Seluruh simpul seimbang: jumlah masuk sama dengan jumlah keluar, dan hasil akhir berjumlah 6.701.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><h2>Alur data dari awal sampai hasil akhir</h2><p class="sub">Setiap tahap dibandingkan dengan tahap induknya.</p></div>
+  <div class="panel scroll">
+  <table>
+    <thead><tr><th>Tahap</th><th class="r">Vendor</th><th class="r">% tahap induk</th><th>Keterangan</th><th>Sumber</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="5">Penyaringan awal</td></tr>
+      <tr><td>Seluruh vendor</td><td class="r num">15.227</td><td class="r muted">-</td><td>Titik awal</td><td>raw_data</td></tr>
+      <tr><td>Aktif</td><td class="r num">10.367</td><td class="r num">68,1%</td><td>active = 1</td><td>raw_data</td></tr>
+      <tr><td>Nonaktif (tidak diproses)</td><td class="r num">4.860</td><td class="r num">31,9%</td><td>active = 0</td><td>raw_data</td></tr>
+      <tr><td>Bertipe material atau service</td><td class="r num">6.701</td><td class="r num">64,6%</td><td>Material 3.926 dan service 2.775. Dasar proses dedup</td><td>aktif_service_material</td></tr>
+      <tr><td>Tipe vendor kosong (tidak diproses)</td><td class="r num">3.666</td><td class="r num">35,4%</td><td>Tipe vendor belum diisi di sumber</td><td>raw_data</td></tr>
+      <tr class="grp"><td colspan="5">Hasil dedup</td></tr>
+      <tr><td>UNIK</td><td class="r num">3.198</td><td class="r num">47,7%</td><td>Tidak punya kembaran</td><td>kualifikasi</td></tr>
+      <tr><td>Perlu pengecekan</td><td class="r num">3.503</td><td class="r num">52,3%</td><td>Vendor dengan lebih dari satu ID (nama atau NPWP sama), umumnya karena melayani material dan service sehingga terdaftar dua kali: 3.024 nama persis sama, 468 nama mirip, dan 11 NPWP sama dengan nama berbeda</td><td>kualifikasi</td></tr>
+      <tr class="total"><td>Cek total dedup</td><td class="r num">6.701</td><td class="r num">100,0%</td><td colspan="2" class="muted" style="font-weight:400">Sama dengan jumlah vendor bertipe material atau service</td></tr>
+      <tr class="grp"><td colspan="5">Hasil akhir</td></tr>
+      <tr><td>Masuk vendor_fix</td><td class="r num">4.433</td><td class="r num">66,2%</td><td>Vendor fix (kelompok A)</td><td>vendor_fix</td></tr>
+      <tr><td>ID digabung (tipe sama)</td><td class="r num">756</td><td class="r num">11,3%</td><td>ID dengan tipe sama (material dengan material, atau service dengan service) yang digabung ke vendor di vendor_fix. ID-nya tercatat di id_digabung (kelompok B)</td><td>laporan</td></tr>
+      <tr><td>ID tipe lain (tidak digabung)</td><td class="r num">954</td><td class="r num">14,2%</td><td>Vendor yang melayani material dan service: satu ID masuk vendor_fix, ID untuk tipe satunya tetap aktif terpisah dan tercatat di id_tipe_lain. Tidak digabung karena beda tipe (kelompok C)</td><td>laporan</td></tr>
+      <tr><td>Dinonaktifkan</td><td class="r num">492</td><td class="r num">7,3%</td><td>Keputusan akhir nonaktif (kelompok D). Alasan semula dicatat per vendor di kolom Keterangan sheet laporan</td><td>laporan</td></tr>
+      <tr><td>Vendor perorangan</td><td class="r num">66</td><td class="r num">1,0%</td><td>Dipisah dari vendor (kelompok E)</td><td>vendor perorangan</td></tr>
+      <tr class="total"><td>Cek total hasil akhir</td><td class="r num">6.701</td><td class="r num">100,0%</td><td colspan="2" class="muted" style="font-weight:400">Sama dengan jumlah vendor bertipe material atau service</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-h"><h2>Keputusan di vendor_fix</h2><p class="sub">Dari 4.433 vendor, 42 masih perlu diputuskan sebelum dipakai.</p></div>
+  <div class="panel">
+    <div class="rows">
+      <div class="row"><span class="nm"><b>AKTIF</b><br><span class="muted">Vendor aktif tanpa catatan khusus</span></span><div class="bar"><i style="width:99.1%"></i></div><span class="vv">4.391 · 99,1%</span></div>
+      <div class="row"><span class="nm"><b>PERLU KONFIRMASI</b><br><span class="muted">Nama kembar, beda tipe, atau catatan belum final</span></span><div class="bar"><i style="width:.9%;background:var(--violet)"></i></div><span class="vv">42 · 0,9%</span></div>
+    </div>
+    <p class="note" style="margin:14px 0 0">Tercatat 756 ID digabung ke 680 vendor tujuan. Tidak ada vendor yang belum punya keputusan, dan 954 ID tipe lain (tidak digabung) dicatat di kolom id_tipe_lain.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><h2>Rekomendasi tindak lanjut</h2><p class="sub">Setiap vendor masuk satu kategori. Aturan dibaca dari atas ke bawah dan berhenti di aturan pertama yang cocok.</p></div>
+  <div class="panel">
+    <div class="stack" role="img" aria-label="Komposisi kategori: lengkapi dan verifikasi 88,7 persen, siap dipakai 5,3 persen, perbarui dokumen 5,1 persen, konfirmasi keputusan 0,9 persen">
+      <div style="flex:3930;background:var(--warn)"></div><div style="flex:234;background:var(--good)"></div><div style="flex:227;background:var(--serious)"></div><div style="flex:42;background:var(--violet)"></div>
+    </div>
+    <div class="scroll" style="margin-top:12px"><table>
+      <thead><tr><th>Kategori</th><th class="r">Vendor</th><th class="r">%</th><th>Aturan</th><th>Tindakan</th></tr></thead>
+      <tbody>
+        <tr><td><span class="legend"><span><b style="background:var(--violet)"></b>Konfirmasi keputusan</span></span></td><td class="r num">42</td><td class="r num">0,9%</td><td>Keputusan masih "perlu konfirmasi": nama kembar, beda tipe, atau catatan belum final.</td><td>Putuskan gabung atau pisah bersama pemilik data sebelum vendor dipakai.</td></tr>
+        <tr><td><span class="legend"><span><b style="background:var(--serious)"></b>Perbarui dokumen</span></span></td><td class="r num">227</td><td class="r num">5,1%</td><td>Status expired (219) atau blocked (8).</td><td>Minta dokumen terbaru; tahan penggunaan sampai status valid.</td></tr>
+        <tr><td><span class="legend"><span><b style="background:var(--warn)"></b>Lengkapi dan verifikasi</span></span></td><td class="r num">3.930</td><td class="r num">88,7%</td><td>Belum approved, atau alamat dan NPWP/NIB belum ada.</td><td>Lengkapi bertahap, mulai dari vendor dengan riwayat PO/PR terbanyak.</td></tr>
+        <tr><td><span class="legend"><span><b style="background:var(--good)"></b>Siap dipakai</span></span></td><td class="r num">234</td><td class="r num">5,3%</td><td>Approved, alamat terisi, dan ada NPWP atau NIB.</td><td>Jadikan vendor rujukan.</td></tr>
+        <tr class="total"><td>Total</td><td class="r num">4.433</td><td class="r num">100,0%</td><td colspan="2"></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><h2>Kelengkapan data inti</h2><p class="sub">Persentase dihitung dari 4.433 vendor di vendor_fix.</p></div>
+  <div class="panel">
+    <div class="rows">
+      <div class="row"><span class="nm">Alamat</span><div class="bar"><i style="width:90%"></i></div><span class="vv">3.991 · 90,0%</span></div>
+      <div class="row"><span class="nm">Bidang usaha</span><div class="bar"><i style="width:45.2%"></i></div><span class="vv">2.002 · 45,2%</span></div>
+      <div class="row"><span class="nm">Telepon</span><div class="bar"><i style="width:31.4%"></i></div><span class="vv">1.392 · 31,4%</span></div>
+      <div class="row"><span class="nm">Email</span><div class="bar"><i style="width:30.1%"></i></div><span class="vv">1.334 · 30,1%</span></div>
+      <div class="row"><span class="nm">NPWP</span><div class="bar"><i style="width:26.1%"></i></div><span class="vv">1.157 · 26,1%</span></div>
+      <div class="row"><span class="nm">NIB</span><div class="bar"><i style="width:20.8%"></i></div><span class="vv">920 · 20,8%</span></div>
+      <div class="row"><span class="nm">Website</span><div class="bar"><i style="width:16.2%"></i></div><span class="vv">718 · 16,2%</span></div>
+      <div class="row"><span class="nm">NPWP atau NIB</span><div class="bar"><i style="width:26.1%;background:var(--accent)"></i></div><span class="vv">1.158 · 26,1%</span></div>
+    </div>
+    <p class="note" style="margin:14px 0 0">Dari 920 nomor NIB, 919 masih diisi dari nomor SIUP lama dan perlu diganti.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><h2>Rancangan form pengisian</h2><p class="sub">Form untuk vendor baru: 50 kolom dalam 7 langkah. Sistem mengisi otomatis sebanyak mungkin, vendor hanya mengonfirmasi.</p></div>
+  <div class="finds">
+    <div class="panel">
+      <p style="margin:0 0 12px;font-weight:600">Kolom per langkah</p>
+      <div class="rows">
+        <div class="row"><span class="nm">1. Identitas usaha</span><div class="bar"><i style="width:75%"></i></div><span class="vv">9</span></div>
+        <div class="row"><span class="nm">2. Alamat</span><div class="bar"><i style="width:83.3%"></i></div><span class="vv">10</span></div>
+        <div class="row"><span class="nm">3. Kontak</span><div class="bar"><i style="width:50%"></i></div><span class="vv">6</span></div>
+        <div class="row"><span class="nm">4. Legalitas</span><div class="bar"><i style="width:100%"></i></div><span class="vv">12</span></div>
+        <div class="row"><span class="nm">5. Rekening bank</span><div class="bar"><i style="width:33.3%"></i></div><span class="vv">4</span></div>
+        <div class="row"><span class="nm">6. Tinjau dan kirim</span><div class="bar"><i style="width:16.7%"></i></div><span class="vv">2</span></div>
+        <div class="row"><span class="nm">7. Sistem (admin)</span><div class="bar"><i style="width:58.3%"></i></div><span class="vv">7</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <p style="margin:0 0 4px;font-weight:600">Kolom terisi otomatis: 31 dari 50</p>
+      <div class="stack" style="height:18px;margin:8px 0 12px" role="img" aria-label="31 kolom otomatis: 10 dari lokasi, 10 dari dokumen, 11 dari sistem; 19 diisi vendor">
+        <div style="flex:10;background:var(--accent)"></div><div style="flex:10;background:var(--flow)"></div><div style="flex:11;background:var(--out)"></div><div style="flex:19;background:var(--soft)"></div>
+      </div>
+      <div class="legend" style="flex-direction:column;gap:8px">
+        <span><b style="background:var(--accent)"></b><span><b style="all:unset;font-weight:600">10 dari lokasi.</b> Asal vendor, provinsi, kota, kecamatan, kelurahan, kode pos, negara, latitude, longitude, zona waktu.</span></span>
+        <span><b style="background:var(--flow)"></b><span><b style="all:unset;font-weight:600">10 dari dokumen.</b> Tahun berdiri, NPWP, nomor dan tanggal NIB, skala usaha (dari modal), nomor dan tanggal akta, masa berlaku dokumen, nomor rekening, nama pemilik rekening.</span></span>
+        <span><b style="background:var(--out)"></b><span><b style="all:unset;font-weight:600">11 dari sistem.</b> ID, kode supplier, nama lengkap, alamat lengkap, penanda NPWP, status, ID induk, tanggal dan penyetuju, sumber data, skor kelengkapan.</span></span>
+        <span><b style="background:var(--soft);border:1px solid var(--line)"></b><span><b style="all:unset;font-weight:600">19 diisi vendor.</b> Nama, bentuk usaha, kontak, alamat jalan, dan sisanya.</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="panel scroll"><table>
+    <thead><tr><th>Usulan</th><th class="r">Kolom</th><th>Arti</th><th>Kolom</th></tr></thead>
+    <tbody>
+      <tr><td><b>TETAP</b></td><td class="r num">45</td><td>Dipakai langsung oleh form, validasi, atau laporan</td><td class="muted">Seluruh kolom lain, termasuk skt_nomor dan masa_berlaku_dokumen yang dibaca dari dokumen yang diunggah</td></tr>
+      <tr><td><b>TURUNAN</b></td><td class="r num">5</td><td>Dihitung sistem, tidak diketik</td><td class="muted">nama_lengkap, tahun_berdiri, alamat_lengkap, skor_kelengkapan, zona_waktu</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-h"><h2>Struktur data</h2><p class="sub">Tabel basis data dan dokumen tata kelola di workbook.</p></div>
+  <div class="panel scroll"><table>
+    <thead><tr><th>Sheet</th><th class="r">Baris atau kolom</th><th class="r">% dari db_vendor</th><th>Isi</th><th>Keterangan</th></tr></thead>
+    <tbody>
+      <tr><td>db_vendor</td><td class="r num">4.433</td><td class="r num">100,0%</td><td>Data inti vendor</td><td>Jumlah sama dengan vendor_fix</td></tr>
+      <tr><td>db_legal</td><td class="r num">1.548</td><td class="r num">34,9%</td><td>NPWP, NIB, SKT, akta pendirian</td><td>Satu baris per vendor yang punya data legal</td></tr>
+      <tr><td>db_kontak</td><td class="r num">1.373</td><td class="r num">31,0%</td><td>Email, telepon, mobile, website</td><td>Satu baris per vendor yang punya data kontak</td></tr>
+      <tr><td>db_alamat</td><td class="r num">3.992</td><td class="r num">90,1%</td><td>Alamat, kota, kode pos, koordinat</td><td>Satu baris per vendor yang punya alamat</td></tr>
+      <tr><td>db_bank</td><td class="r num">0</td><td class="r muted">-</td><td>Rekening bank vendor</td><td>Tabel sudah disiapkan (id_vendor, nama_bank, nomor_rekening, nama_pemilik_rekening) tetapi belum berisi data</td></tr>
+      <tr><td>data_governance</td><td class="r num">47</td><td class="r muted">-</td><td>Aturan tata kelola data vendor</td><td>11 bagian: tujuan, peran, prinsip, siklus data, kualitas data, cegah data kosong, konsistensi pengisian, pemantauan, perubahan, keamanan, otomatisasi</td></tr>
+      <tr><td>vendor perorangan</td><td class="r num">66</td><td class="r muted">-</td><td>Vendor yang berupa orang pribadi</td><td>Seluruhnya bertipe service dan domestic</td></tr>
+      <tr><td>data_dictionary</td><td class="r num">50 kolom</td><td class="r muted">-</td><td>Kolom baku untuk data vendor baru</td><td>Identitas 11, alamat 10, legalitas 12, kontak 6, status 5, bank 4, audit 2</td></tr>
+      <tr><td>rekomendasi ui &amp; aturan pengisian</td><td class="r num">50 kolom</td><td class="r muted">-</td><td>Rancangan form input dalam 7 langkah</td><td>Identitas usaha 9, alamat 10, kontak 6, legalitas 12, rekening bank 4, tinjau dan kirim 2, sistem 7</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sec-h"><h2>Temuan utama</h2></div>
+  <div class="finds">
+    <div class="find"><span class="big f">3.666</span><p><b>Vendor aktif tanpa tipe</b> tidak diproses. Dari 10.367 vendor aktif, hanya 6.701 yang bertipe material atau service.</p></div>
+    <div class="find"><span class="big w">3.503</span><p><b>Vendor perlu pengecekan</b>: 3.024 nama persis sama, 468 nama mirip, dan 11 NPWP sama dengan nama berbeda. Penanda "perlu dicek" pada 2.028 di antaranya berasal dari tahap dedup dan bukan antrean yang tersisa: setiap vendor kini sudah punya hasil akhir.</p></div>
+    <div class="find"><span class="big f">4.433</span><p><b>Vendor di vendor_fix.</b> 756 ID bertipe sama digabung ke vendor di vendor_fix, 954 ID bertipe lain dari vendor material + service tetap aktif terpisah (tidak digabung), dan 66 vendor perorangan dipisah. 492 vendor dinonaktifkan.</p></div>
+    <div class="find"><span class="big s">26,1%</span><p><b>Vendor punya NPWP</b>, dan hanya 20,8% punya NIB. Ini hambatan terbesar menuju status siap dipakai.</p></div>
+    <div class="find"><span class="big g">234</span><p><b>Vendor langsung siap dipakai</b> (5,3%). 3.930 vendor perlu dilengkapi dan diverifikasi.</p></div>
+    <div class="find"><span class="big s">&harr;</span><p><b>Asal vendor tidak selalu sesuai.</b> 108 vendor sudah diperbaiki: 60 PT atau CV yang tercatat overseas menjadi domestic, dan 48 vendor berbentuk usaha asing yang tercatat domestic menjadi overseas. 7 vendor masih menunggu konfirmasi bentuk usaha. Di sistem baru, asal vendor diisi otomatis dari lokasi lalu dikonfirmasi vendor.</p></div>
+  </div>
+</section>
+</div>
+
+<script>
+(function(){
+  var fmt=function(n){return n.toLocaleString('id-ID')};
+  var pct=function(a,b){return (a/b*100).toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'};
+  var C={flow:'var(--flow)',out:'var(--out)',warn:'var(--warn)',serious:'var(--serious)',good:'var(--good)',violet:'var(--violet)'};
+  var N=[
+   {id:'all',t:'Seluruh vendor',c:0,k:'flow'},
+   {id:'act',t:'Vendor aktif',c:1,k:'flow'},{id:'non',t:'Vendor nonaktif (tidak diproses)',c:1,k:'out'},
+   {id:'ms',t:'Material & service (diproses)',c:2,k:'flow'},{id:'kos',t:'Vendor type null',c:2,k:'out'},
+   {id:'fix',t:'Masuk vendor_fix',c:3,k:'flow'},{id:'tl',t:'ID tipe lain (tidak digabung)',c:3,k:'flow'},{id:'join',t:'ID digabung (tipe sama)',c:3,k:'flow'},
+   {id:'dnk',t:'Dinonaktifkan',c:3,k:'out'},{id:'per',t:'Vendor perorangan',c:3,k:'out'},
+   {id:'len',t:'Lengkapi dan verifikasi',c:4,k:'warn'},{id:'sia',t:'Siap dipakai',c:4,k:'good'},{id:'per2',t:'Perbarui dokumen',c:4,k:'serious'},{id:'kon',t:'Konfirmasi keputusan',c:4,k:'violet'}
+  ];
+  var L=[
+   ['all','act',10367],['all','non',4860],['act','ms',6701],['act','kos',3666],
+   ['ms','fix',4433],['ms','tl',954],['ms','join',756],['ms','dnk',492],['ms','per',66],
+   ['fix','len',3930],['fix','sia',234],['fix','per2',227],['fix','kon',42]
+  ];
+  var byId={};N.forEach(function(n){byId[n.id]=n;n.in=[];n.out=[]});
+  var links=L.map(function(l){var o={s:byId[l[0]],t:byId[l[1]],v:l[2]};o.s.out.push(o);o.t.in.push(o);return o});
+  N.forEach(function(n){var a=n.in.reduce(function(s,l){return s+l.v},0),b=n.out.reduce(function(s,l){return s+l.v},0);n.v=Math.max(a,b)});
+  var W=1200,H=600,NW=14,PADL=8,PADR=270,GAP=30,top=44;
+  var ky=(H-2*top-GAP)/15227;
+  var colx=function(c){return PADL+c*((W-PADL-PADR-NW)/4)};
+  for(var c=0;c<5;c++){
+    var y=top;N.filter(function(n){return n.c===c}).forEach(function(n){n.x=colx(c);n.h=Math.max(n.v*ky,4);n.y=y;y+=n.h+GAP});
+  }
+  // order links on each node by the position of the node at the other end
+  N.forEach(function(n){n.out.sort(function(a,b){return a.t.y-b.t.y});n.in.sort(function(a,b){return a.s.y-b.s.y})});
+  N.forEach(function(n){var o=n.y;n.out.forEach(function(l){l.w=Math.max(l.v*ky,1);l.y0=o+l.w/2;o+=l.w});});
+  N.forEach(function(n){var o=n.y;n.in.forEach(function(l){l.y1=o+l.w/2;o+=l.w});});
+  var NS='http://www.w3.org/2000/svg',svg=document.getElementById('sksvg'),tip=document.getElementById('tip'),box=document.getElementById('sk');
+  var el=function(tag,attrs,parent){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);(parent||svg).appendChild(e);return e};
+  var gl=el('g',{}),gn=el('g',{}),gt=el('g',{});
+  var HD=['1. Seluruh data','2. Filter vendor aktif','3. Filter vendor type','4. Hasil akhir: 6.701','5. Rekomendasi: 4.433'];
+  HD.forEach(function(h,i){var t=el('text',{x:colx(i),y:18,class:'hd'},gt);t.textContent=h.toUpperCase();
+    el('line',{x1:colx(i),x2:colx(i)+NW+(i<4?150:230),y1:28,y2:28,class:'hl'},gt)});
+  var paths=[];
+  links.forEach(function(l){
+    var x0=l.s.x+NW,x1=l.t.x,xm=(x0+x1)/2;
+    var p=el('path',{d:'M'+x0+','+l.y0+'C'+xm+','+l.y0+' '+xm+','+l.y1+' '+x1+','+l.y1,'stroke-width':l.w,class:'lk'},gl);
+    p.style.stroke=C[l.t.k];p.style.opacity=.38;l.el=p;paths.push(p);
+    p.addEventListener('mousemove',function(e){show(e,l.s.t+' → '+l.t.t,fmt(l.v)+' vendor · '+pct(l.v,l.s.v)+' dari '+l.s.t.toLowerCase());hl([l])});
+    p.addEventListener('mouseleave',reset);
+  });
+  N.forEach(function(n){
+    var r=el('rect',{x:n.x,y:n.y,width:NW,height:n.h,rx:2,class:'nd'},gn);r.style.fill=C[n.k];
+    r.addEventListener('mousemove',function(e){show(e,n.t,fmt(n.v)+' vendor'+(n.in.length?' · '+pct(n.v,n.in[0].s.v)+' dari '+n.in[0].s.t.toLowerCase():''));hl(n.in.concat(n.out))});
+    r.addEventListener('mouseleave',reset);
+    var cy=n.y+n.h/2;
+    var t1=el('text',{x:n.x+NW+8,y:cy-3,class:'t'},gt);t1.textContent=n.t;
+    var t2=el('text',{x:n.x+NW+8,y:cy+12,class:'v'},gt);t2.textContent=fmt(n.v);
+  });
+  function hl(a){paths.forEach(function(p){p.style.opacity=.12});a.forEach(function(l){l.el.style.opacity=.7})}
+  function reset(){paths.forEach(function(p){p.style.opacity=.38});tip.style.opacity=0}
+  function show(e,h,b){var r=box.getBoundingClientRect();tip.innerHTML='<b>'+h+'</b><br>'+b;tip.style.left=Math.min(e.clientX-r.left+14,r.width-270)+'px';tip.style.top=(e.clientY-r.top+14)+'px';tip.style.opacity=1}
+  var tb=document.querySelector('#sktable tbody');
+  links.forEach(function(l){var tr=document.createElement('tr');tr.innerHTML='<td>'+l.s.t+'</td><td>'+l.t.t+'</td><td class="r num">'+fmt(l.v)+'</td><td class="r num">'+pct(l.v,l.s.v)+'</td>';tb.appendChild(tr)});
+})();
+</script>
+
+</body></html>
